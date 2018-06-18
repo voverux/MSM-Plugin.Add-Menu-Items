@@ -1,0 +1,135 @@
+﻿<script type="text/javascript" src="template.js"></script>
+<script>
+    (function () {
+
+        var _pluginId = "marval-baltic-plugins-add-menu-items";
+		if(window.top.document.getElementById(_pluginId + "-defined")) return;
+
+        var MarvalSoftware = window.top.MarvalSoftware;
+        var $ = window.top.$;
+
+        MarvalSoftware.Plugins.define(_pluginId,
+        {
+			_pluginSettings: [{
+					action: "addMenu", //addSubMenu
+					identifier: "extra-menu-item-0",
+					label: "Pagalba",
+					title: "Pagalba",
+					menuId: null,
+					submenuId: null,
+					cssClass: "help",
+					href: "Help/Documentation.pdf",
+					target: "_blank"
+				}],
+			_pluginDebug: false,
+			_pluginHandlerRequest: null,
+			_getPluginPath: function () { return this.attributes["data-pluginpath"].value; },
+
+            init: function () {
+				this._getPluginSettings(
+					this,
+					this._processPluginActions
+				);
+				// creating element to have a flag whether plugin has been defined. To avoid defining duplicated plugin in summary pages.
+				var plgn_def = window.top.document.createElement("SPAN"); plgn_def.id = _pluginId + "-defined"; window.top.document.body.appendChild(plgn_def);
+            },
+			_getPluginSettings: function (plugin, callbackFunction) {
+				if (plugin._pluginHandlerRequest) {
+					plugin._pluginHandlerRequest.abort();
+					plugin._pluginHandlerRequest = null;
+				}
+				plugin._pluginHandlerRequest = $.ajax({
+					type: "GET",
+					url: plugin._getPluginPath() + "APIHandler.ashx",
+					contentType: "application/json; charset=utf-8",
+					dataType: "json",
+					success: function (result) {
+						callbackFunction(plugin, JSON.parse(result));
+					}.bind(plugin),
+					error: function (xhr, ajaxOptions, thrownError) {
+						if (xhr.status > 0) plugin._showErrorMessage(xhr.status + '\n' + thrownError);
+					}.bind(plugin)
+				});
+			},
+			_processPluginActions: function(plugin, settings) {
+				if(settings && settings.length>0) {
+					for(var i=0; i<settings.length; i++) {
+						plugin._addMenuItem(settings[i]);
+					}
+				}
+				else {
+					plugin._showErrorMessage("Plugin settings are not defined or incorrect. Please contact system administrator.");
+				}
+				
+			},
+			_addMenuItem: function(menuItem) {
+				var menu = MarvalSoftware.UI.Controls.ScriptManager.getInstance().getControl("ctl00_mainMenu");
+				if(menu) {
+					var liElement = document.createElement("LI");
+					liElement.setAttribute("identifier", menuItem.identifier);
+					liElement.className = menuItem.cssClass;
+					var aElement = document.createElement("A");
+					aElement.href = menuItem.href;
+					aElement.title = menuItem.label;
+					aElement.innerHTML = menuItem.title;
+					aElement.target = menuItem.target;
+					liElement.appendChild(aElement);
+					
+					var rebuild = false;
+					switch(menuItem.action) {
+						case "addMenu":
+							if(menuItem.menuId==null || !Number.isInteger(menuItem.menuId) || menuItem.menuId < 0 || menuItem.menuId > menu._menuBarElement.childNodes.lenght-1 ) {
+								menu._menuBarElement.insertBefore(liElement, menu._menuBarElement.childNodes[menu._menuBarElement.childNodes.length - 1]);
+							}
+							else {
+								menu._menuBarElement.insertBefore(liElement, menu._menuBarElement.childNodes[menuItem.menuId]);
+							}
+
+							rebuild = true;
+							break;
+						case "addSubMenu":
+							if(menuItem.menuId==null || !Number.isInteger(menuItem.menuId) || menuItem.menuId < 0 || menuItem.menuId > menu._menuBarElement.childNodes.lenght-1 ) break;
+							var subMenuElement = menu._menuBarElement.childNodes[menuItem.menuId].getElementsByTagName("UL")[0];
+							if (subMenuElement) {
+								if(menuItem.submenuId==null || !Number.isInteger(menuItem.submenuId) || menuItem.submenuId < 0 || menuItem.submenuId > subMenuElement.childNodes.lenght-1 ) {
+									subMenuElement.insertBefore(liElement, subMenuElement.nextSibling);
+								}
+								else {
+									subMenuElement.insertBefore(liElement, subMenuElement.childNodes[menuItem.submenuId]);
+								}
+								rebuild = true;
+								break;
+							}
+							
+							break;
+					}
+					if(rebuild) {
+						// rebuild menu
+						if (menu._menuBar) {
+							// see MSM-2078 for explanation
+							menu._selectedMenuItem = null;
+							menu._menuBar.dispose();
+						}
+
+						menu._menuItems = {};
+						menu._menuBar = menu._buildMenuFromMarkup(menu._menuBarElement);
+						menu._fold();
+					}
+
+				}
+			},
+			_showErrorMessage: function (errorMessage) {
+				MarvalSoftware.UI.MessageBox.show(
+					"Plugin Error",
+					errorMessage,
+					MarvalSoftware.UI.MessageBox.Types.ERROR,
+					null,
+					null,
+					400
+				);
+			},
+			_pluginLogConsole: function(s){console.log(s);}
+
+        });
+    })();
+</script>
