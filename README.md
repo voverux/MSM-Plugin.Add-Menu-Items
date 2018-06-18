@@ -19,8 +19,8 @@ Once the plugin has been installed you will need to configure the following sett
 		{
 			"action": "addSubMenu", /* Action: addSubMenu/addMenu */
 			"identifier": "extra-menu-item-0", /* Menu Item Unique Identifier */
-			"label": "Help Document", /* Menu Item Label */
-			"title": "Help Document", /* Menu Item Title */
+			"label": "Help Documentation", /* Menu Item Label */
+			"title": "Help Documentation", /* Menu Item Title */
 			"menuId": 8, /* Main Menu Id, where to put item to (starting 0) */
 			"submenuId": 0, /* SubMenu Id, where to put item to (starting 0) */
 			"cssClass": "help", /* CSS class to apply to Menu Item */
